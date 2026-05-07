@@ -142,3 +142,81 @@ button {
   color: #2563eb;
   font-weight: 600;
 }
+
+.page-header--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.button--secondary {
+  background: #ffffff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.state {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.state--loading {
+  color: #4b5563;
+}
+
+.state--error {
+  margin: 16px 0;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.data-table th {
+  background: #f9fafb;
+  font-size: 14px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-link {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.pagination-info {
+  margin-top: 16px;
+  color: #6b7280;
+}
+
+@media (max-width: 860px) {
+  .page-header--row {
+    flex-direction: column;
+  }
+}
