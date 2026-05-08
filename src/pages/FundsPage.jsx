@@ -4,8 +4,17 @@ import { refreshFundsMarketData } from '../api/marketDataApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 
+const initialFilters = {
+    minPrice: '',
+    maxPrice: '',
+    minReturn1y: '',
+    maxReturn1y: '',
+}
+
 export default function FundsPage() {
     const [fundsPage, setFundsPage] = useState(null)
+    const [filters, setFilters] = useState(initialFilters)
+
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
 
@@ -14,15 +23,16 @@ export default function FundsPage() {
     const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
-        loadFunds()
+        loadFunds(initialFilters)
     }, [])
 
-    async function loadFunds() {
+    async function loadFunds(filtersForRequest = filters) {
         try {
             setLoading(true)
             setError('')
 
             const data = await getFunds({
+                ...filtersForRequest,
                 page: 0,
                 size: 20,
             })
@@ -35,6 +45,27 @@ export default function FundsPage() {
         }
     }
 
+    function handleFilterChange(event) {
+        const { name, value } = event.target
+
+        setFilters((prev) => ({
+            ...prev,
+            [name]: value,
+        }))
+    }
+
+    function handleFilterSubmit(event) {
+        event.preventDefault()
+        setRefreshMessage('')
+        loadFunds(filters)
+    }
+
+    function handleResetFilters() {
+        setFilters(initialFilters)
+        setRefreshMessage('')
+        loadFunds(initialFilters)
+    }
+
     async function handleRefreshMarketData() {
         try {
             setRefreshing(true)
@@ -44,7 +75,7 @@ export default function FundsPage() {
             await refreshFundsMarketData()
 
             setRefreshMessage('Рыночные данные по фондам обновлены.')
-            await loadFunds()
+            await loadFunds(filters)
         } catch (err) {
             setRefreshError(err.message || 'Не удалось обновить данные по фондам')
         } finally {
@@ -74,7 +105,7 @@ export default function FundsPage() {
                     <button
                         type="button"
                         className="button button--secondary"
-                        onClick={loadFunds}
+                        onClick={() => loadFunds(filters)}
                         disabled={refreshing}
                     >
                         Перезагрузить список
@@ -91,6 +122,83 @@ export default function FundsPage() {
                 </div>
             </div>
 
+            <form className="filters-card" onSubmit={handleFilterSubmit}>
+                <div className="filters-card__header">
+                    <h2>Фильтры</h2>
+
+                    <p>
+                        Фильтры передаются на backend как query-параметры endpoint
+                        GET /api/funds.
+                    </p>
+                </div>
+
+                <div className="filters-grid filters-grid--funds">
+                    <label>
+                        Цена от, ₽
+                        <input
+                            type="number"
+                            name="minPrice"
+                            value={filters.minPrice}
+                            onChange={handleFilterChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="Например, 10"
+                        />
+                    </label>
+
+                    <label>
+                        Цена до, ₽
+                        <input
+                            type="number"
+                            name="maxPrice"
+                            value={filters.maxPrice}
+                            onChange={handleFilterChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="Например, 300"
+                        />
+                    </label>
+
+                    <label>
+                        Доходность за год от, %
+                        <input
+                            type="number"
+                            name="minReturn1y"
+                            value={filters.minReturn1y}
+                            onChange={handleFilterChange}
+                            step="0.01"
+                            placeholder="Например, 20"
+                        />
+                    </label>
+
+                    <label>
+                        Доходность за год до, %
+                        <input
+                            type="number"
+                            name="maxReturn1y"
+                            value={filters.maxReturn1y}
+                            onChange={handleFilterChange}
+                            step="0.01"
+                            placeholder="Например, 30"
+                        />
+                    </label>
+                </div>
+
+                <div className="filters-actions">
+                    <button type="submit" className="button">
+                        Применить фильтры
+                    </button>
+
+                    <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={handleResetFilters}
+                    >
+                        Сбросить
+                    </button>
+                </div>
+            </form>
+
             <ErrorMessage message={error} />
             <ErrorMessage message={refreshError} />
 
@@ -102,7 +210,7 @@ export default function FundsPage() {
 
             {!error && fundsPage?.content?.length === 0 && (
                 <div className="state">
-                    Фонды не найдены. Возможно, данные ещё не были загружены из MOEX.
+                    Фонды не найдены по заданным условиям фильтрации.
                 </div>
             )}
 
