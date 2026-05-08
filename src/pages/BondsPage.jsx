@@ -156,8 +156,8 @@ export default function BondsPage() {
 
                     <p>
                         В разделе отображаются облигации российского рынка. Для каждой
-                        бумаги показаны основные параметры: тикер, эмитент, текущая цена,
-                        годовая доходность, дата погашения и риск-рейтинг.
+                        бумаги показаны основные параметры: тикер, текущая цена, годовая
+                        доходность, дата погашения и риск-рейтинг.
                     </p>
                 </div>
 
@@ -297,7 +297,6 @@ export default function BondsPage() {
                             <tr>
                                 <th>Название</th>
                                 <th>Тикер</th>
-                                <th>Эмитент</th>
                                 <th>
                                     <SortButton
                                         label="Цена"
@@ -339,7 +338,6 @@ export default function BondsPage() {
                                 <tr key={bond.id}>
                                     <td>{bond.name}</td>
                                     <td>{bond.ticker}</td>
-                                    <td>{bond.issuerName || '—'}</td>
                                     <td>{formatMoney(bond.currentPrice)}</td>
                                     <td>{formatPercent(bond.annualYieldPercent)}</td>
                                     <td>{formatDate(bond.maturityDate)}</td>
