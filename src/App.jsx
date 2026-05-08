@@ -5,6 +5,7 @@ import BondsPage from './pages/BondsPage'
 import BondDetailsPage from './pages/BondDetailsPage'
 import FundsPage from './pages/FundsPage'
 import EducationPage from './pages/EducationPage'
+import ArticlePage from './pages/ArticlePage'
 
 export default function App() {
     return (
@@ -16,6 +17,7 @@ export default function App() {
                     <Route path="bonds/:id" element={<BondDetailsPage />} />
                     <Route path="funds" element={<FundsPage />} />
                     <Route path="education" element={<EducationPage />} />
+                    <Route path="education/:slug" element={<ArticlePage />} />
                 </Route>
             </Routes>
         </BrowserRouter>
