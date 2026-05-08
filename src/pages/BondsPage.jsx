@@ -15,9 +15,15 @@ const initialFilters = {
     riskRating: '',
 }
 
+const initialSortConfig = {
+    field: '',
+    direction: '',
+}
+
 export default function BondsPage() {
     const [bondsPage, setBondsPage] = useState(null)
     const [filters, setFilters] = useState(initialFilters)
+    const [sortConfig, setSortConfig] = useState(initialSortConfig)
 
     const [currentPage, setCurrentPage] = useState(0)
     const [pageSize, setPageSize] = useState(20)
@@ -30,13 +36,14 @@ export default function BondsPage() {
     const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
-        loadBonds(initialFilters, 0, pageSize)
+        loadBonds(initialFilters, 0, pageSize, initialSortConfig)
     }, [])
 
     async function loadBonds(
         filtersForRequest = filters,
         pageForRequest = currentPage,
         sizeForRequest = pageSize,
+        sortForRequest = sortConfig,
     ) {
         try {
             setLoading(true)
@@ -46,6 +53,7 @@ export default function BondsPage() {
                 ...filtersForRequest,
                 page: pageForRequest,
                 size: sizeForRequest,
+                sort: buildSortParam(sortForRequest),
             })
 
             setBondsPage(data)
@@ -71,14 +79,14 @@ export default function BondsPage() {
 
         setRefreshMessage('')
         setCurrentPage(0)
-        loadBonds(filters, 0, pageSize)
+        loadBonds(filters, 0, pageSize, sortConfig)
     }
 
     function handleResetFilters() {
         setFilters(initialFilters)
         setRefreshMessage('')
         setCurrentPage(0)
-        loadBonds(initialFilters, 0, pageSize)
+        loadBonds(initialFilters, 0, pageSize, sortConfig)
     }
 
     function handlePageSizeChange(event) {
@@ -86,7 +94,7 @@ export default function BondsPage() {
 
         setPageSize(newPageSize)
         setCurrentPage(0)
-        loadBonds(filters, 0, newPageSize)
+        loadBonds(filters, 0, newPageSize, sortConfig)
     }
 
     function handleGoToPage(page) {
@@ -98,7 +106,25 @@ export default function BondsPage() {
         const safePage = Math.min(Math.max(page, 0), lastPageIndex)
 
         setCurrentPage(safePage)
-        loadBonds(filters, safePage, pageSize)
+        loadBonds(filters, safePage, pageSize, sortConfig)
+    }
+
+    function handleSort(field) {
+        const nextDirection =
+            sortConfig.field === field && sortConfig.direction === 'desc'
+                ? 'asc'
+                : 'desc'
+
+        const nextSortConfig = {
+            field,
+            direction: nextDirection,
+        }
+
+        setSortConfig(nextSortConfig)
+        setRefreshMessage('')
+        setCurrentPage(0)
+
+        loadBonds(filters, 0, pageSize, nextSortConfig)
     }
 
     async function handleRefreshMarketData() {
@@ -110,7 +136,7 @@ export default function BondsPage() {
             await refreshBondsMarketData()
 
             setRefreshMessage('Рыночные данные по облигациям обновлены.')
-            await loadBonds(filters, currentPage, pageSize)
+            await loadBonds(filters, currentPage, pageSize, sortConfig)
         } catch (err) {
             setRefreshError(err.message || 'Не удалось обновить данные по облигациям')
         } finally {
@@ -139,7 +165,7 @@ export default function BondsPage() {
                     <button
                         type="button"
                         className="button button--secondary"
-                        onClick={() => loadBonds(filters, currentPage, pageSize)}
+                        onClick={() => loadBonds(filters, currentPage, pageSize, sortConfig)}
                         disabled={refreshing}
                     >
                         Перезагрузить список
@@ -272,10 +298,38 @@ export default function BondsPage() {
                                 <th>Название</th>
                                 <th>Тикер</th>
                                 <th>Эмитент</th>
-                                <th>Цена</th>
-                                <th>Доходность</th>
-                                <th>Погашение</th>
-                                <th>Рейтинг</th>
+                                <th>
+                                    <SortButton
+                                        label="Цена"
+                                        field="currentPrice"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
+                                <th>
+                                    <SortButton
+                                        label="Доходность"
+                                        field="annualYieldPercent"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
+                                <th>
+                                    <SortButton
+                                        label="Погашение"
+                                        field="maturityDate"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
+                                <th>
+                                    <SortButton
+                                        label="Рейтинг"
+                                        field="riskRating"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
                                 <th></th>
                             </tr>
                             </thead>
@@ -315,4 +369,37 @@ export default function BondsPage() {
             )}
         </section>
     )
+}
+
+function SortButton({ label, field, sortConfig, onSort }) {
+    const isActive = sortConfig.field === field
+    const icon = getSortIcon(isActive, sortConfig.direction)
+
+    return (
+        <button
+            type="button"
+            className={isActive ? 'sort-button sort-button--active' : 'sort-button'}
+            onClick={() => onSort(field)}
+            title={`Сортировать по полю "${label}"`}
+        >
+            <span>{label}</span>
+            <span className="sort-button__icon">{icon}</span>
+        </button>
+    )
+}
+
+function getSortIcon(isActive, direction) {
+    if (!isActive) {
+        return '↕'
+    }
+
+    return direction === 'desc' ? '↓' : '↑'
+}
+
+function buildSortParam(sortConfig) {
+    if (!sortConfig.field || !sortConfig.direction) {
+        return ''
+    }
+
+    return `${sortConfig.field},${sortConfig.direction}`
 }
