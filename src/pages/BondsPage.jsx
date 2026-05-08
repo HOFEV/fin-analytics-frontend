@@ -159,10 +159,6 @@ export default function BondsPage() {
             <form className="filters-card" onSubmit={handleFilterSubmit}>
                 <div className="filters-card__header">
                     <h2>Фильтры</h2>
-                    <p>
-                        Фильтры передаются на backend как query-параметры endpoint
-                        GET /api/bonds.
-                    </p>
                 </div>
 
                 <div className="filters-grid">
