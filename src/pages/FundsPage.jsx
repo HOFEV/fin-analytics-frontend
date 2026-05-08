@@ -13,9 +13,15 @@ const initialFilters = {
     maxReturn1y: '',
 }
 
+const initialSortConfig = {
+    field: '',
+    direction: '',
+}
+
 export default function FundsPage() {
     const [fundsPage, setFundsPage] = useState(null)
     const [filters, setFilters] = useState(initialFilters)
+    const [sortConfig, setSortConfig] = useState(initialSortConfig)
 
     const [currentPage, setCurrentPage] = useState(0)
     const [pageSize, setPageSize] = useState(20)
@@ -28,13 +34,14 @@ export default function FundsPage() {
     const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
-        loadFunds(initialFilters, 0, pageSize)
+        loadFunds(initialFilters, 0, pageSize, initialSortConfig)
     }, [])
 
     async function loadFunds(
         filtersForRequest = filters,
         pageForRequest = currentPage,
         sizeForRequest = pageSize,
+        sortForRequest = sortConfig,
     ) {
         try {
             setLoading(true)
@@ -44,6 +51,7 @@ export default function FundsPage() {
                 ...filtersForRequest,
                 page: pageForRequest,
                 size: sizeForRequest,
+                sort: buildSortParam(sortForRequest),
             })
 
             setFundsPage(data)
@@ -69,14 +77,14 @@ export default function FundsPage() {
 
         setRefreshMessage('')
         setCurrentPage(0)
-        loadFunds(filters, 0, pageSize)
+        loadFunds(filters, 0, pageSize, sortConfig)
     }
 
     function handleResetFilters() {
         setFilters(initialFilters)
         setRefreshMessage('')
         setCurrentPage(0)
-        loadFunds(initialFilters, 0, pageSize)
+        loadFunds(initialFilters, 0, pageSize, sortConfig)
     }
 
     function handlePageSizeChange(event) {
@@ -84,7 +92,7 @@ export default function FundsPage() {
 
         setPageSize(newPageSize)
         setCurrentPage(0)
-        loadFunds(filters, 0, newPageSize)
+        loadFunds(filters, 0, newPageSize, sortConfig)
     }
 
     function handleGoToPage(page) {
@@ -96,7 +104,25 @@ export default function FundsPage() {
         const safePage = Math.min(Math.max(page, 0), lastPageIndex)
 
         setCurrentPage(safePage)
-        loadFunds(filters, safePage, pageSize)
+        loadFunds(filters, safePage, pageSize, sortConfig)
+    }
+
+    function handleSort(field) {
+        const nextDirection =
+            sortConfig.field === field && sortConfig.direction === 'desc'
+                ? 'asc'
+                : 'desc'
+
+        const nextSortConfig = {
+            field,
+            direction: nextDirection,
+        }
+
+        setSortConfig(nextSortConfig)
+        setRefreshMessage('')
+        setCurrentPage(0)
+
+        loadFunds(filters, 0, pageSize, nextSortConfig)
     }
 
     async function handleRefreshMarketData() {
@@ -108,7 +134,7 @@ export default function FundsPage() {
             await refreshFundsMarketData()
 
             setRefreshMessage('Рыночные данные по фондам обновлены.')
-            await loadFunds(filters, currentPage, pageSize)
+            await loadFunds(filters, currentPage, pageSize, sortConfig)
         } catch (err) {
             setRefreshError(err.message || 'Не удалось обновить данные по фондам')
         } finally {
@@ -127,10 +153,9 @@ export default function FundsPage() {
                     <h1>Фонды</h1>
 
                     <p>
-                        В разделе отображаются фонды из whitelist. Для каждого фонда
-                        показываются тикер, текущая цена, минимальная сумма покупки,
-                        рассчитанная доходность за год и дата последнего обновления
-                        рыночных данных.
+                        В данном разделе отображаются фонды. Для каждого фонда показываются
+                        тикер, текущая цена, рассчитанная доходность за год и дата
+                        последнего обновления рыночных данных.
                     </p>
                 </div>
 
@@ -138,7 +163,7 @@ export default function FundsPage() {
                     <button
                         type="button"
                         className="button button--secondary"
-                        onClick={() => loadFunds(filters, currentPage, pageSize)}
+                        onClick={() => loadFunds(filters, currentPage, pageSize, sortConfig)}
                         disabled={refreshing}
                     >
                         Перезагрузить список
@@ -158,11 +183,6 @@ export default function FundsPage() {
             <form className="filters-card" onSubmit={handleFilterSubmit}>
                 <div className="filters-card__header">
                     <h2>Фильтры</h2>
-
-                    <p>
-                        Фильтры передаются на backend как query-параметры endpoint
-                        GET /api/funds.
-                    </p>
                 </div>
 
                 <div className="filters-grid filters-grid--funds">
@@ -255,9 +275,22 @@ export default function FundsPage() {
                             <tr>
                                 <th>Название</th>
                                 <th>Тикер</th>
-                                <th>Текущая цена</th>
-                                <th>Минимальная сумма</th>
-                                <th>Доходность за год</th>
+                                <th>
+                                    <SortButton
+                                        label="Цена"
+                                        field="currentPrice"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
+                                <th>
+                                    <SortButton
+                                        label="Доходность за год"
+                                        field="return1yPercent"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                    />
+                                </th>
                                 <th>Дата обновления</th>
                             </tr>
                             </thead>
@@ -268,7 +301,6 @@ export default function FundsPage() {
                                     <td>{fund.name}</td>
                                     <td>{fund.ticker}</td>
                                     <td>{formatMoney(fund.currentPrice)}</td>
-                                    <td>{formatMoney(fund.minInvestmentAmount)}</td>
                                     <td>{formatPercent(fund.return1yPercent)}</td>
                                     <td>{formatDateTime(fund.lastMarketDataAt)}</td>
                                 </tr>
@@ -291,4 +323,37 @@ export default function FundsPage() {
             )}
         </section>
     )
+}
+
+function SortButton({ label, field, sortConfig, onSort }) {
+    const isActive = sortConfig.field === field
+    const icon = getSortIcon(isActive, sortConfig.direction)
+
+    return (
+        <button
+            type="button"
+            className={isActive ? 'sort-button sort-button--active' : 'sort-button'}
+            onClick={() => onSort(field)}
+            title={`Сортировать по полю "${label}"`}
+        >
+            <span>{label}</span>
+            <span className="sort-button__icon">{icon}</span>
+        </button>
+    )
+}
+
+function getSortIcon(isActive, direction) {
+    if (!isActive) {
+        return '↕'
+    }
+
+    return direction === 'desc' ? '↓' : '↑'
+}
+
+function buildSortParam(sortConfig) {
+    if (!sortConfig.field || !sortConfig.direction) {
+        return ''
+    }
+
+    return `${sortConfig.field},${sortConfig.direction}`
 }
