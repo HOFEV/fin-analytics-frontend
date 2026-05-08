@@ -4,21 +4,29 @@ import { getEducationArticles } from '../api/educationApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 
+const initialFilters = {
+    search: '',
+    category: '',
+}
+
 export default function EducationPage() {
     const [articlesPage, setArticlesPage] = useState(null)
+    const [filters, setFilters] = useState(initialFilters)
+
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
     useEffect(() => {
-        loadArticles()
+        loadArticles(initialFilters)
     }, [])
 
-    async function loadArticles() {
+    async function loadArticles(filtersForRequest = filters) {
         try {
             setLoading(true)
             setError('')
 
             const data = await getEducationArticles({
+                ...filtersForRequest,
                 page: 0,
                 size: 20,
             })
@@ -29,6 +37,25 @@ export default function EducationPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    function handleFilterChange(event) {
+        const { name, value } = event.target
+
+        setFilters((prev) => ({
+            ...prev,
+            [name]: value,
+        }))
+    }
+
+    function handleFilterSubmit(event) {
+        event.preventDefault()
+        loadArticles(filters)
+    }
+
+    function handleResetFilters() {
+        setFilters(initialFilters)
+        loadArticles(initialFilters)
     }
 
     if (loading) {
@@ -48,16 +75,71 @@ export default function EducationPage() {
                     </p>
                 </div>
 
-                <button type="button" className="button button--secondary" onClick={loadArticles}>
+                <button
+                    type="button"
+                    className="button button--secondary"
+                    onClick={() => loadArticles(filters)}
+                >
                     Перезагрузить список
                 </button>
             </div>
+
+            <form className="filters-card" onSubmit={handleFilterSubmit}>
+                <div className="filters-card__header">
+                    <h2>Поиск и фильтрация</h2>
+
+                    <p>
+                        Параметры поиска передаются на backend как query-параметры endpoint
+                        GET /api/education/articles.
+                    </p>
+                </div>
+
+                <div className="filters-grid filters-grid--education">
+                    <label>
+                        Поиск по статье
+                        <input
+                            type="text"
+                            name="search"
+                            value={filters.search}
+                            onChange={handleFilterChange}
+                            placeholder="Например, инфляция"
+                        />
+                    </label>
+
+                    <label>
+                        Категория
+                        <select
+                            name="category"
+                            value={filters.category}
+                            onChange={handleFilterChange}
+                        >
+                            <option value="">Все категории</option>
+                            <option value="basic">Базовые понятия</option>
+                            <option value="instruments">Инструменты</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div className="filters-actions">
+                    <button type="submit" className="button">
+                        Применить
+                    </button>
+
+                    <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={handleResetFilters}
+                    >
+                        Сбросить
+                    </button>
+                </div>
+            </form>
 
             <ErrorMessage message={error} />
 
             {!error && articlesPage?.content?.length === 0 && (
                 <div className="state">
-                    Обучающие статьи не найдены.
+                    Обучающие статьи не найдены по заданным условиям.
                 </div>
             )}
 

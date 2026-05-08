@@ -587,3 +587,26 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.filters-grid--education {
+  grid-template-columns: 2fr 1fr;
+}
+
+.filters-grid input[type="text"] {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.filters-grid input[type="text"]:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+@media (max-width: 860px) {
+  .filters-grid--education {
+    grid-template-columns: 1fr;
+  }
+}
