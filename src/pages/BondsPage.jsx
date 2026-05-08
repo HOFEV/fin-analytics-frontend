@@ -5,8 +5,18 @@ import { refreshBondsMarketData } from '../api/marketDataApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 
+const initialFilters = {
+    minPrice: '',
+    maxPrice: '',
+    minYield: '',
+    maxYield: '',
+    riskRating: '',
+}
+
 export default function BondsPage() {
     const [bondsPage, setBondsPage] = useState(null)
+    const [filters, setFilters] = useState(initialFilters)
+
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
 
@@ -15,15 +25,16 @@ export default function BondsPage() {
     const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
-        loadBonds()
+        loadBonds(initialFilters)
     }, [])
 
-    async function loadBonds() {
+    async function loadBonds(filtersForRequest = filters) {
         try {
             setLoading(true)
             setError('')
 
             const data = await getBonds({
+                ...filtersForRequest,
                 page: 0,
                 size: 20,
             })
@@ -36,6 +47,27 @@ export default function BondsPage() {
         }
     }
 
+    function handleFilterChange(event) {
+        const { name, value } = event.target
+
+        setFilters((prev) => ({
+            ...prev,
+            [name]: value,
+        }))
+    }
+
+    function handleFilterSubmit(event) {
+        event.preventDefault()
+        setRefreshMessage('')
+        loadBonds(filters)
+    }
+
+    function handleResetFilters() {
+        setFilters(initialFilters)
+        setRefreshMessage('')
+        loadBonds(initialFilters)
+    }
+
     async function handleRefreshMarketData() {
         try {
             setRefreshing(true)
@@ -45,7 +77,7 @@ export default function BondsPage() {
             await refreshBondsMarketData()
 
             setRefreshMessage('Рыночные данные по облигациям обновлены.')
-            await loadBonds()
+            await loadBonds(filters)
         } catch (err) {
             setRefreshError(err.message || 'Не удалось обновить данные по облигациям')
         } finally {
@@ -74,7 +106,7 @@ export default function BondsPage() {
                     <button
                         type="button"
                         className="button button--secondary"
-                        onClick={loadBonds}
+                        onClick={() => loadBonds(filters)}
                         disabled={refreshing}
                     >
                         Перезагрузить список
@@ -91,6 +123,102 @@ export default function BondsPage() {
                 </div>
             </div>
 
+            <form className="filters-card" onSubmit={handleFilterSubmit}>
+                <div className="filters-card__header">
+                    <h2>Фильтры</h2>
+                    <p>
+                        Фильтры передаются на backend как query-параметры endpoint
+                        GET /api/bonds.
+                    </p>
+                </div>
+
+                <div className="filters-grid">
+                    <label>
+                        Цена от, ₽
+                        <input
+                            type="number"
+                            name="minPrice"
+                            value={filters.minPrice}
+                            onChange={handleFilterChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="Например, 900"
+                        />
+                    </label>
+
+                    <label>
+                        Цена до, ₽
+                        <input
+                            type="number"
+                            name="maxPrice"
+                            value={filters.maxPrice}
+                            onChange={handleFilterChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="Например, 1000"
+                        />
+                    </label>
+
+                    <label>
+                        Доходность от, %
+                        <input
+                            type="number"
+                            name="minYield"
+                            value={filters.minYield}
+                            onChange={handleFilterChange}
+                            step="0.01"
+                            placeholder="Например, 8"
+                        />
+                    </label>
+
+                    <label>
+                        Доходность до, %
+                        <input
+                            type="number"
+                            name="maxYield"
+                            value={filters.maxYield}
+                            onChange={handleFilterChange}
+                            step="0.01"
+                            placeholder="Например, 12"
+                        />
+                    </label>
+
+                    <label>
+                        Риск-рейтинг
+                        <select
+                            name="riskRating"
+                            value={filters.riskRating}
+                            onChange={handleFilterChange}
+                        >
+                            <option value="">Любой</option>
+                            <option value="AAA">AAA</option>
+                            <option value="AA">AA</option>
+                            <option value="A">A</option>
+                            <option value="BBB">BBB</option>
+                            <option value="BB">BB</option>
+                            <option value="B">B</option>
+                            <option value="CCC">CCC</option>
+                            <option value="CC">CC</option>
+                            <option value="C">C</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div className="filters-actions">
+                    <button type="submit" className="button">
+                        Применить фильтры
+                    </button>
+
+                    <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={handleResetFilters}
+                    >
+                        Сбросить
+                    </button>
+                </div>
+            </form>
+
             <ErrorMessage message={error} />
             <ErrorMessage message={refreshError} />
 
@@ -102,7 +230,7 @@ export default function BondsPage() {
 
             {!error && bondsPage?.content?.length === 0 && (
                 <div className="state">
-                    Облигации не найдены. Возможно, данные ещё не были загружены из MOEX.
+                    Облигации не найдены по заданным условиям фильтрации.
                 </div>
             )}
 
