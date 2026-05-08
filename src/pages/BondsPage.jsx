@@ -5,6 +5,7 @@ import { refreshBondsMarketData } from '../api/marketDataApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 import Pagination from '../components/Pagination'
+import { formatDate, formatMoney, formatPercent } from '../utils/formatters'
 
 const initialFilters = {
     minPrice: '',
@@ -318,34 +319,4 @@ export default function BondsPage() {
             )}
         </section>
     )
-}
-
-function formatMoney(value) {
-    if (value === null || value === undefined) {
-        return '—'
-    }
-
-    return `${Number(value).toLocaleString('ru-RU', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })} ₽`
-}
-
-function formatPercent(value) {
-    if (value === null || value === undefined) {
-        return '—'
-    }
-
-    return `${Number(value).toLocaleString('ru-RU', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })} %`
-}
-
-function formatDate(value) {
-    if (!value) {
-        return '—'
-    }
-
-    return new Date(value).toLocaleDateString('ru-RU')
 }

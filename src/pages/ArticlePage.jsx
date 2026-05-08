@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getEducationArticleBySlug } from '../api/educationApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
+import { formatDateTime } from '../utils/formatters'
 
 export default function ArticlePage() {
     const { slug } = useParams()
@@ -73,12 +74,4 @@ export default function ArticlePage() {
             </article>
         </section>
     )
-}
-
-function formatDateTime(value) {
-    if (!value) {
-        return '—'
-    }
-
-    return new Date(value).toLocaleString('ru-RU')
 }
