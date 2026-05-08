@@ -1,20 +1,8 @@
 import { apiRequest } from './apiClient'
+import { buildUrl } from '../utils/queryParams'
 
 export function getEducationArticles(params = {}) {
-    const searchParams = new URLSearchParams()
-
-    Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-            searchParams.append(key, value)
-        }
-    })
-
-    const queryString = searchParams.toString()
-    const path = queryString
-        ? `/education/articles?${queryString}`
-        : '/education/articles'
-
-    return apiRequest(path)
+    return apiRequest(buildUrl('/education/articles', params))
 }
 
 export function getEducationArticleBySlug(slug) {
