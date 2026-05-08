@@ -15,6 +15,9 @@ export default function FundsPage() {
     const [fundsPage, setFundsPage] = useState(null)
     const [filters, setFilters] = useState(initialFilters)
 
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageSize, setPageSize] = useState(20)
+
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
 
@@ -23,21 +26,26 @@ export default function FundsPage() {
     const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
-        loadFunds(initialFilters)
+        loadFunds(initialFilters, 0, pageSize)
     }, [])
 
-    async function loadFunds(filtersForRequest = filters) {
+    async function loadFunds(
+        filtersForRequest = filters,
+        pageForRequest = currentPage,
+        sizeForRequest = pageSize,
+    ) {
         try {
             setLoading(true)
             setError('')
 
             const data = await getFunds({
                 ...filtersForRequest,
-                page: 0,
-                size: 20,
+                page: pageForRequest,
+                size: sizeForRequest,
             })
 
             setFundsPage(data)
+            setCurrentPage(data.page)
         } catch (err) {
             setError(err.message || 'Не удалось загрузить список фондов')
         } finally {
@@ -56,14 +64,37 @@ export default function FundsPage() {
 
     function handleFilterSubmit(event) {
         event.preventDefault()
+
         setRefreshMessage('')
-        loadFunds(filters)
+        setCurrentPage(0)
+        loadFunds(filters, 0, pageSize)
     }
 
     function handleResetFilters() {
         setFilters(initialFilters)
         setRefreshMessage('')
-        loadFunds(initialFilters)
+        setCurrentPage(0)
+        loadFunds(initialFilters, 0, pageSize)
+    }
+
+    function handlePageSizeChange(event) {
+        const newPageSize = Number(event.target.value)
+
+        setPageSize(newPageSize)
+        setCurrentPage(0)
+        loadFunds(filters, 0, newPageSize)
+    }
+
+    function handleGoToPage(page) {
+        if (!fundsPage) {
+            return
+        }
+
+        const lastPageIndex = Math.max(fundsPage.totalPages - 1, 0)
+        const safePage = Math.min(Math.max(page, 0), lastPageIndex)
+
+        setCurrentPage(safePage)
+        loadFunds(filters, safePage, pageSize)
     }
 
     async function handleRefreshMarketData() {
@@ -75,7 +106,7 @@ export default function FundsPage() {
             await refreshFundsMarketData()
 
             setRefreshMessage('Рыночные данные по фондам обновлены.')
-            await loadFunds(filters)
+            await loadFunds(filters, currentPage, pageSize)
         } catch (err) {
             setRefreshError(err.message || 'Не удалось обновить данные по фондам')
         } finally {
@@ -105,7 +136,7 @@ export default function FundsPage() {
                     <button
                         type="button"
                         className="button button--secondary"
-                        onClick={() => loadFunds(filters)}
+                        onClick={() => loadFunds(filters, currentPage, pageSize)}
                         disabled={refreshing}
                     >
                         Перезагрузить список
@@ -244,13 +275,86 @@ export default function FundsPage() {
                         </table>
                     </div>
 
-                    <div className="pagination-info">
-                        Страница {fundsPage.page + 1} из {fundsPage.totalPages || 1}. Всего
-                        записей: {fundsPage.totalElements}.
-                    </div>
+                    <Pagination
+                        page={fundsPage.page}
+                        size={pageSize}
+                        totalPages={fundsPage.totalPages}
+                        totalElements={fundsPage.totalElements}
+                        first={fundsPage.first}
+                        last={fundsPage.last}
+                        onPageSizeChange={handlePageSizeChange}
+                        onGoToPage={handleGoToPage}
+                    />
                 </>
             )}
         </section>
+    )
+}
+
+function Pagination({
+                        page,
+                        size,
+                        totalPages,
+                        totalElements,
+                        first,
+                        last,
+                        onPageSizeChange,
+                        onGoToPage,
+                    }) {
+    return (
+        <div className="pagination">
+            <div className="pagination__info">
+                Страница {page + 1} из {totalPages || 1}. Всего записей: {totalElements}.
+            </div>
+
+            <div className="pagination__controls">
+                <label className="pagination__size">
+                    Записей на странице
+                    <select value={size} onChange={onPageSizeChange}>
+                        <option value={1}>1</option>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                    </select>
+                </label>
+
+                <button
+                    type="button"
+                    className="button button--secondary"
+                    onClick={() => onGoToPage(0)}
+                    disabled={first}
+                >
+                    Первая
+                </button>
+
+                <button
+                    type="button"
+                    className="button button--secondary"
+                    onClick={() => onGoToPage(page - 1)}
+                    disabled={first}
+                >
+                    Назад
+                </button>
+
+                <button
+                    type="button"
+                    className="button button--secondary"
+                    onClick={() => onGoToPage(page + 1)}
+                    disabled={last}
+                >
+                    Вперёд
+                </button>
+
+                <button
+                    type="button"
+                    className="button button--secondary"
+                    onClick={() => onGoToPage(totalPages - 1)}
+                    disabled={last}
+                >
+                    Последняя
+                </button>
+            </div>
+        </div>
     )
 }
 
