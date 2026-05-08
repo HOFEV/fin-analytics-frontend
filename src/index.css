@@ -661,3 +661,34 @@ button {
     justify-content: flex-start;
   }
 }
+
+.not-found {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.not-found__code {
+  margin-bottom: 8px;
+  color: #2563eb;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.not-found h1 {
+  margin: 0 0 12px;
+  font-size: 32px;
+}
+
+.not-found p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.not-found__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}

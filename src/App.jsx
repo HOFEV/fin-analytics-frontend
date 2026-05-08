@@ -6,6 +6,7 @@ import BondDetailsPage from './pages/BondDetailsPage'
 import FundsPage from './pages/FundsPage'
 import EducationPage from './pages/EducationPage'
 import ArticlePage from './pages/ArticlePage'
+import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
     return (
@@ -18,6 +19,7 @@ export default function App() {
                     <Route path="funds" element={<FundsPage />} />
                     <Route path="education" element={<EducationPage />} />
                     <Route path="education/:slug" element={<ArticlePage />} />
+                    <Route path="*" element={<NotFoundPage />} />
                 </Route>
             </Routes>
         </BrowserRouter>
