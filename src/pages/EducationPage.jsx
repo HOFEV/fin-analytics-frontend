@@ -3,35 +3,55 @@ import { Link } from 'react-router-dom'
 import { getEducationArticles } from '../api/educationApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
+import Pagination from '../components/Pagination'
 
 const initialFilters = {
     search: '',
     category: '',
 }
 
+const categoryOptions = [
+    {
+        label: 'Базовые понятия',
+        value: 'basic',
+    },
+    {
+        label: 'Инструменты',
+        value: 'instruments',
+    },
+]
+
 export default function EducationPage() {
     const [articlesPage, setArticlesPage] = useState(null)
     const [filters, setFilters] = useState(initialFilters)
+
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageSize, setPageSize] = useState(20)
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
     useEffect(() => {
-        loadArticles(initialFilters)
+        loadArticles(initialFilters, 0, pageSize)
     }, [])
 
-    async function loadArticles(filtersForRequest = filters) {
+    async function loadArticles(
+        filtersForRequest = filters,
+        pageForRequest = currentPage,
+        sizeForRequest = pageSize,
+    ) {
         try {
             setLoading(true)
             setError('')
 
             const data = await getEducationArticles({
                 ...filtersForRequest,
-                page: 0,
-                size: 20,
+                page: pageForRequest,
+                size: sizeForRequest,
             })
 
             setArticlesPage(data)
+            setCurrentPage(data.page)
         } catch (err) {
             setError(err.message || 'Не удалось загрузить обучающие статьи')
         } finally {
@@ -50,12 +70,35 @@ export default function EducationPage() {
 
     function handleFilterSubmit(event) {
         event.preventDefault()
-        loadArticles(filters)
+
+        setCurrentPage(0)
+        loadArticles(filters, 0, pageSize)
     }
 
     function handleResetFilters() {
         setFilters(initialFilters)
-        loadArticles(initialFilters)
+        setCurrentPage(0)
+        loadArticles(initialFilters, 0, pageSize)
+    }
+
+    function handlePageSizeChange(event) {
+        const newPageSize = Number(event.target.value)
+
+        setPageSize(newPageSize)
+        setCurrentPage(0)
+        loadArticles(filters, 0, newPageSize)
+    }
+
+    function handleGoToPage(page) {
+        if (!articlesPage) {
+            return
+        }
+
+        const lastPageIndex = Math.max(articlesPage.totalPages - 1, 0)
+        const safePage = Math.min(Math.max(page, 0), lastPageIndex)
+
+        setCurrentPage(safePage)
+        loadArticles(filters, safePage, pageSize)
     }
 
     if (loading) {
@@ -78,7 +121,7 @@ export default function EducationPage() {
                 <button
                     type="button"
                     className="button button--secondary"
-                    onClick={() => loadArticles(filters)}
+                    onClick={() => loadArticles(filters, currentPage, pageSize)}
                 >
                     Перезагрузить список
                 </button>
@@ -89,8 +132,9 @@ export default function EducationPage() {
                     <h2>Поиск и фильтрация</h2>
 
                     <p>
-                        Параметры поиска передаются на backend как query-параметры endpoint
-                        GET /api/education/articles.
+                        В интерфейсе отображается название категории, а в backend
+                        передаётся её slug. Это позволяет не привязывать API к русскому
+                        отображаемому названию.
                     </p>
                 </div>
 
@@ -114,8 +158,12 @@ export default function EducationPage() {
                             onChange={handleFilterChange}
                         >
                             <option value="">Все категории</option>
-                            <option value="basic">Базовые понятия</option>
-                            <option value="instruments">Инструменты</option>
+
+                            {categoryOptions.map((category) => (
+                                <option key={category.value} value={category.value}>
+                                    {category.label}
+                                </option>
+                            ))}
                         </select>
                     </label>
                 </div>
@@ -163,10 +211,16 @@ export default function EducationPage() {
                         ))}
                     </div>
 
-                    <div className="pagination-info">
-                        Страница {articlesPage.page + 1} из {articlesPage.totalPages || 1}. Всего
-                        записей: {articlesPage.totalElements}.
-                    </div>
+                    <Pagination
+                        page={articlesPage.page}
+                        size={pageSize}
+                        totalPages={articlesPage.totalPages}
+                        totalElements={articlesPage.totalElements}
+                        first={articlesPage.first}
+                        last={articlesPage.last}
+                        onPageSizeChange={handlePageSizeChange}
+                        onGoToPage={handleGoToPage}
+                    />
                 </>
             )}
         </section>
