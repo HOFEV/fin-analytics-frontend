@@ -480,3 +480,24 @@ button {
   font-size: 18px;
   line-height: 1.75;
 }
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.state--success {
+  margin: 16px 0;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+@media (max-width: 860px) {
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

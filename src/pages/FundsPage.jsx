@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 import { getFunds } from '../api/fundsApi'
+import { refreshFundsMarketData } from '../api/marketDataApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 
 export default function FundsPage() {
     const [fundsPage, setFundsPage] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
+
     const [error, setError] = useState('')
+    const [refreshError, setRefreshError] = useState('')
+    const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
         loadFunds()
@@ -30,6 +35,23 @@ export default function FundsPage() {
         }
     }
 
+    async function handleRefreshMarketData() {
+        try {
+            setRefreshing(true)
+            setRefreshError('')
+            setRefreshMessage('')
+
+            await refreshFundsMarketData()
+
+            setRefreshMessage('Рыночные данные по фондам обновлены.')
+            await loadFunds()
+        } catch (err) {
+            setRefreshError(err.message || 'Не удалось обновить данные по фондам')
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     if (loading) {
         return <Loading text="Загрузка фондов..." />
     }
@@ -48,12 +70,35 @@ export default function FundsPage() {
                     </p>
                 </div>
 
-                <button type="button" className="button button--secondary" onClick={loadFunds}>
-                    Перезагрузить список
-                </button>
+                <div className="page-actions">
+                    <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={loadFunds}
+                        disabled={refreshing}
+                    >
+                        Перезагрузить список
+                    </button>
+
+                    <button
+                        type="button"
+                        className="button"
+                        onClick={handleRefreshMarketData}
+                        disabled={refreshing}
+                    >
+                        {refreshing ? 'Обновление...' : 'Обновить данные из MOEX'}
+                    </button>
+                </div>
             </div>
 
             <ErrorMessage message={error} />
+            <ErrorMessage message={refreshError} />
+
+            {refreshMessage && (
+                <div className="state state--success">
+                    {refreshMessage}
+                </div>
+            )}
 
             {!error && fundsPage?.content?.length === 0 && (
                 <div className="state">

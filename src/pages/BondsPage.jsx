@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getBonds } from '../api/bondsApi'
+import { refreshBondsMarketData } from '../api/marketDataApi'
 import Loading from '../components/Loading'
 import ErrorMessage from '../components/ErrorMessage'
 
 export default function BondsPage() {
     const [bondsPage, setBondsPage] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
+
     const [error, setError] = useState('')
+    const [refreshError, setRefreshError] = useState('')
+    const [refreshMessage, setRefreshMessage] = useState('')
 
     useEffect(() => {
         loadBonds()
@@ -31,6 +36,23 @@ export default function BondsPage() {
         }
     }
 
+    async function handleRefreshMarketData() {
+        try {
+            setRefreshing(true)
+            setRefreshError('')
+            setRefreshMessage('')
+
+            await refreshBondsMarketData()
+
+            setRefreshMessage('Рыночные данные по облигациям обновлены.')
+            await loadBonds()
+        } catch (err) {
+            setRefreshError(err.message || 'Не удалось обновить данные по облигациям')
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     if (loading) {
         return <Loading text="Загрузка облигаций..." />
     }
@@ -48,12 +70,35 @@ export default function BondsPage() {
                     </p>
                 </div>
 
-                <button type="button" className="button button--secondary" onClick={loadBonds}>
-                    Обновить список
-                </button>
+                <div className="page-actions">
+                    <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={loadBonds}
+                        disabled={refreshing}
+                    >
+                        Перезагрузить список
+                    </button>
+
+                    <button
+                        type="button"
+                        className="button"
+                        onClick={handleRefreshMarketData}
+                        disabled={refreshing}
+                    >
+                        {refreshing ? 'Обновление...' : 'Обновить данные из MOEX'}
+                    </button>
+                </div>
             </div>
 
             <ErrorMessage message={error} />
+            <ErrorMessage message={refreshError} />
+
+            {refreshMessage && (
+                <div className="state state--success">
+                    {refreshMessage}
+                </div>
+            )}
 
             {!error && bondsPage?.content?.length === 0 && (
                 <div className="state">
